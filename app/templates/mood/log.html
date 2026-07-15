@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Log Mood - Wellness Assistant{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h4 class="text-center mb-4">How are you feeling?</h4>
+
+            <form method="POST" action="{{ url_for('mood.log') }}">
+                <div class="row g-3 mb-4 text-center">
+                    {% set mood_emojis = {
+                        'happy': '😊', 'calm': '😌', 'anxious': '😰',
+                        'sad': '😢', 'angry': '😠', 'stressed': '😫', 'neutral': '😐'
+                    } %}
+                    {% for mood in mood_categories %}
+                    <div class="col-3 col-md-auto">
+                        <input type="radio" class="btn-check" name="mood" id="mood_{{ mood }}"
+                               value="{{ mood }}" required>
+                        <label class="btn btn-outline-secondary rounded-circle p-3" for="mood_{{ mood }}"
+                               style="width: 70px; height: 70px; font-size: 1.8rem; line-height: 1;">
+                            {{ mood_emojis[mood] }}
+                        </label>
+                        <br><small>{{ mood | capitalize }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="note" class="form-label">Add a note (optional)</label>
+                    <textarea class="form-control" id="note" name="note" rows="3"
+                              maxlength="500" placeholder="What's on your mind?"></textarea>
+                    <div class="form-text"><span id="charCount">0</span>/500 characters</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Log Mood</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const noteInput = document.getElementById('note');
+const charCount = document.getElementById('charCount');
+noteInput.addEventListener('input', () => {
+    charCount.textContent = noteInput.value.length;
+});
+</script>
+{% endblock %}

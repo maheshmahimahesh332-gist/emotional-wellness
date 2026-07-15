@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ exercise.title }} - Wellness Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .step-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        opacity: 0.6;
+    }
+    .step-card.active {
+        opacity: 1;
+        border-left: 4px solid #667eea;
+        transform: scale(1.02);
+    }
+    .step-card.completed {
+        opacity: 0.8;
+        border-left: 4px solid #00b894;
+    }
+    .timer-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <a href="{{ url_for('mindfulness.index') }}" class="btn btn-link mb-3">
+            <i class="bi bi-arrow-left"></i> Back to exercises
+        </a>
+
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h3>{{ exercise.title }}</h3>
+                    <p class="text-muted">{{ exercise.description }}</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-info">{{ exercise.difficulty | capitalize }}</span>
+                    <br><small class="text-muted">{{ exercise.duration_minutes }} minutes</small>
+                </div>
+            </div>
+
+            <div class="text-center my-3">
+                <div class="timer-display" id="timer">{{ exercise.duration_minutes }}:00</div>
+                <button class="btn btn-primary btn-sm mt-2" id="startTimer">Start Timer</button>
+            </div>
+        </div>
+
+        <h5 class="mb-3">Steps</h5>
+        {% for step in steps %}
+        <div class="step-card {{ 'active' if loop.index == 1 else '' }}" id="step{{ loop.index }}">
+            <div class="d-flex align-items-start">
+                <span class="badge bg-primary rounded-circle me-3" style="width:30px;height:30px;line-height:20px;">
+                    {{ loop.index }}
+                </span>
+                <p class="mb-0">{{ step }}</p>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="text-center mt-4">
+            <form method="POST" action="{{ url_for('mindfulness.complete', exercise_id=exercise.id) }}">
+                <button type="submit" class="btn btn-primary btn-lg" id="completeBtn">
+                    <i class="bi bi-check-circle"></i> Mark as Complete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let totalSeconds = {{ exercise.duration_minutes }} * 60;
+let timerInterval = null;
+const timerDisplay = document.getElementById('timer');
+const startBtn = document.getElementById('startTimer');
+const steps = document.querySelectorAll('.step-card');
+
+startBtn.addEventListener('click', () => {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        startBtn.textContent = 'Resume Timer';
+        return;
+    }
+
+    startBtn.textContent = 'Pause Timer';
+
+    // Auto-advance steps
+    const stepDuration = totalSeconds / steps.length;
+    let currentStep = 0;
+
+    timerInterval = setInterval(() => {
+        totalSeconds--;
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        // Advance steps
+        const elapsed = ({{ exercise.duration_minutes }} * 60) - totalSeconds;
+        const newStep = Math.min(Math.floor(elapsed / stepDuration), steps.length - 1);
+        if (newStep !== currentStep) {
+            steps[currentStep].classList.remove('active');
+            steps[currentStep].classList.add('completed');
+            currentStep = newStep;
+            steps[currentStep].classList.add('active');
+            steps[currentStep].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        if (totalSeconds <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = 'Done!';
+            startBtn.style.display = 'none';
+            steps.forEach(s => { s.classList.remove('active'); s.classList.add('completed'); });
+        }
+    }, 1000);
+});
+</script>
+{% endblock %}

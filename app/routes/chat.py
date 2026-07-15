@@ -1,0 +1,129 @@
+import json
+from flask import Blueprint, render_template, request, jsonify
+from flask_login import login_required, current_user
+from app import db
+from app.models import ChatMessage, SafetyLog
+
+chat_bp = Blueprint('chat', __name__)
+
+CRISIS_KEYWORDS = [
+    'want to die', 'end it all', 'hurt myself', 'no reason to live',
+    'kill myself', 'suicide', 'self-harm', 'end my life',
+    'better off dead', 'can\'t go on'
+]
+
+EMOTION_RESPONSES = {
+    'happy': "I'm glad you're feeling happy! That's wonderful. What's bringing you joy today?",
+    'calm': "It's great that you're feeling calm. Maintaining this peace is valuable. Would you like to try a mindfulness exercise to deepen this feeling?",
+    'anxious': "I hear that you're feeling anxious. That's a valid feeling. Let's try a grounding technique: can you name 5 things you can see right now?",
+    'sad': "I'm sorry you're feeling sad. It's okay to feel this way. Would you like to talk about what's on your mind, or would you prefer a guided breathing exercise?",
+    'angry': "I can sense you're feeling angry. Your feelings are valid. Let's take a moment — try taking 3 deep breaths with me. Would you like to explore what triggered this feeling?",
+    'stressed': "It sounds like you're under a lot of stress. That must be tough. Let's break things down — what feels most overwhelming right now?",
+    'neutral': "Thanks for checking in. Even neutral days are worth noting. Is there anything specific you'd like to talk about or explore today?"
+}
+
+COPING_SUGGESTIONS = [
+    "Try the 4-7-8 breathing technique: breathe in for 4 seconds, hold for 7, exhale for 8.",
+    "Consider taking a short walk outside. Even 5 minutes of movement can shift your mood.",
+    "Write down three things you're grateful for right now.",
+    "Try a body scan meditation — start from your toes and slowly move your attention upward.",
+    "Reach out to someone you trust and share how you're feeling.",
+    "Practice progressive muscle relaxation: tense each muscle group for 5 seconds, then release."
+]
+
+
+@chat_bp.route('/')
+@login_required
+def index():
+    messages = ChatMessage.query.filter_by(user_id=current_user.id)\
+        .order_by(ChatMessage.created_at.desc()).limit(50).all()
+    messages.reverse()
+    return render_template('chat/index.html', messages=messages)
+
+
+@chat_bp.route('/send', methods=['POST'])
+@login_required
+def send_message():
+    data = request.get_json()
+    user_message = data.get('message', '').strip()
+
+    if not user_message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+
+    # Save user message
+    user_msg = ChatMessage(user_id=current_user.id, role='user', content=user_message)
+    db.session.add(user_msg)
+
+    # Check for crisis keywords
+    message_lower = user_message.lower()
+    crisis_detected = any(keyword in message_lower for keyword in CRISIS_KEYWORDS)
+
+    if crisis_detected:
+        # Activate safety protocol
+        safety_log = SafetyLog(
+            user_id=current_user.id,
+            trigger_source='Chatbot',
+            trigger_content=user_message,
+            event_type='activation'
+        )
+        db.session.add(safety_log)
+
+        response = (
+            "I'm concerned about what you've shared. Your feelings are valid, and you deserve support. "
+            "Please reach out to a crisis service right away:\n\n"
+            "📞 **988 Suicide & Crisis Lifeline**: Call or text 988\n"
+            "💬 **Crisis Text Line**: Text HOME to 741741\n\n"
+            "This app is not a substitute for professional help. A trained counselor can provide "
+            "the support you need right now. You are not alone."
+        )
+    else:
+        response = generate_response(user_message)
+
+    # Save assistant response
+    assistant_msg = ChatMessage(user_id=current_user.id, role='assistant', content=response)
+    db.session.add(assistant_msg)
+    db.session.commit()
+
+    return jsonify({
+        'response': response,
+        'crisis_detected': crisis_detected
+    })
+
+
+def generate_response(message):
+    """Generate an empathetic response based on the message content."""
+    message_lower = message.lower()
+
+    # Check for emotion keywords
+    for emotion, response in EMOTION_RESPONSES.items():
+        if emotion in message_lower:
+            return response
+
+    # Check for greeting
+    greetings = ['hello', 'hi', 'hey', 'good morning', 'good evening']
+    if any(g in message_lower for g in greetings):
+        return ("Hello! I'm here to support you. How are you feeling today? "
+                "You can share your emotions, ask for coping strategies, or "
+                "just chat about what's on your mind.")
+
+    # Check for help request
+    if 'help' in message_lower or 'what can you do' in message_lower:
+        return ("I'm here to provide emotional support and guidance. I can:\n\n"
+                "• Listen to how you're feeling\n"
+                "• Suggest coping strategies\n"
+                "• Guide you through breathing exercises\n"
+                "• Recommend mindfulness activities\n"
+                "• Help you reflect on your emotions\n\n"
+                "What would you like to explore?")
+
+    # Check for thanks
+    if 'thank' in message_lower:
+        return ("You're welcome! Remember, taking time for your emotional wellness "
+                "is an act of strength. I'm here whenever you need support.")
+
+    # Default empathetic response with coping suggestion
+    import random
+    suggestion = random.choice(COPING_SUGGESTIONS)
+    return (f"Thank you for sharing that with me. Your feelings matter. "
+            f"Here's something that might help: {suggestion}\n\n"
+            f"Would you like to tell me more about how you're feeling?")

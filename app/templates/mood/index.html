@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Mood Tracker - Wellness Assistant{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="bi bi-emoji-smile"></i> Mood Tracker</h3>
+    <a href="{{ url_for('mood.log') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Log Mood
+    </a>
+</div>
+
+{% if negative_alert %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>We've noticed a pattern.</strong> Your recent mood entries show sustained negative feelings.
+    Consider taking a <a href="{{ url_for('assessment.index') }}">full assessment</a> or reaching out for professional support.
+</div>
+{% endif %}
+
+<!-- Period Filter -->
+<div class="btn-group mb-4" role="group" aria-label="Time period filter">
+    <a href="{{ url_for('mood.index', period='7') }}"
+       class="btn btn-{{ 'primary' if period == 7 else 'outline-primary' }}">7 Days</a>
+    <a href="{{ url_for('mood.index', period='30') }}"
+       class="btn btn-{{ 'primary' if period == 30 else 'outline-primary' }}">30 Days</a>
+    <a href="{{ url_for('mood.index', period='90') }}"
+       class="btn btn-{{ 'primary' if period == 90 else 'outline-primary' }}">90 Days</a>
+</div>
+
+<div class="row g-4">
+    <!-- Trend Analysis -->
+    {% if trend %}
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h5><i class="bi bi-graph-up"></i> Trend Analysis</h5>
+            <p class="mt-3">
+                <strong>Most Frequent:</strong>
+                {{ trend.most_frequent | capitalize }} ({{ trend.most_frequent_count }} times)
+            </p>
+            <p><strong>Distribution:</strong></p>
+            {% for mood, pct in trend.distribution.items() %}
+            <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                    <small>{{ mood | capitalize }}</small>
+                    <small>{{ pct }}%</small>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar
+                        {% if mood in ['happy', 'calm'] %}bg-success
+                        {% elif mood == 'neutral' %}bg-info
+                        {% else %}bg-warning{% endif %}"
+                        style="width: {{ pct }}%;" role="progressbar"
+                        aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if trend.consecutive_patterns %}
+            <p class="mt-3"><strong>Consecutive patterns:</strong>
+                {% for p in trend.consecutive_patterns %}
+                <span class="badge bg-secondary">{{ p | capitalize }} (3+ in a row)</span>
+                {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mood Entries -->
+    <div class="col-md-{{ '7' if trend else '12' }}">
+        <div class="card p-4">
+            <h5><i class="bi bi-journal-text"></i> Entries ({{ entries | length }})</h5>
+            {% if entries %}
+            <div class="list-group list-group-flush mt-2" style="max-height: 500px; overflow-y: auto;">
+                {% for entry in entries %}
+                <div class="list-group-item px-0">
+                    <div class="d-flex justify-content-between">
+                        <span>
+                            {% if entry.mood == 'happy' %}😊
+                            {% elif entry.mood == 'calm' %}😌
+                            {% elif entry.mood == 'anxious' %}😰
+                            {% elif entry.mood == 'sad' %}😢
+                            {% elif entry.mood == 'angry' %}😠
+                            {% elif entry.mood == 'stressed' %}😫
+                            {% else %}😐{% endif %}
+                            <strong>{{ entry.mood | capitalize }}</strong>
+                        </span>
+                        <small class="text-muted">{{ entry.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                    </div>
+                    {% if entry.note %}
+                    <small class="text-muted">{{ entry.note }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mt-3">No mood entries for this period. Start logging!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

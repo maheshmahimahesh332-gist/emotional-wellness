@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Assessments - Wellness Assistant{% endblock %}
+
+{% block content %}
+<h3 class="mb-4"><i class="bi bi-clipboard-check"></i> Self-Assessment Tools</h3>
+<p class="text-muted mb-4">Understand your emotional state through validated questionnaires.</p>
+
+<div class="row g-4 mb-5">
+    {% for key, assessment in assessments.items() %}
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <h5>
+                {% if key == 'anxiety' %}<i class="bi bi-activity text-warning"></i>
+                {% elif key == 'stress' %}<i class="bi bi-lightning text-danger"></i>
+                {% else %}<i class="bi bi-heart text-success"></i>{% endif %}
+                {{ assessment.title.split('(')[0] }}
+            </h5>
+            <p class="text-muted">{{ assessment.description }}</p>
+            <p><small>{{ assessment.questions | length }} questions</small></p>
+            <a href="{{ url_for('assessment.take', category=key) }}" class="btn btn-primary mt-auto">
+                Take Assessment
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if results %}
+<h4 class="mb-3"><i class="bi bi-bar-chart"></i> Your Results</h4>
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table" aria-label="Assessment results history">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.created_at.strftime('%b %d, %Y') }}</td>
+                    <td>{{ result.category | capitalize }}</td>
+                    <td>
+                        <div class="progress" style="width: 100px; height: 20px;">
+                            <div class="progress-bar
+                                {% if result.score >= 60 %}bg-success
+                                {% elif result.score >= 40 %}bg-warning
+                                {% else %}bg-danger{% endif %}"
+                                style="width: {{ result.score }}%;"
+                                role="progressbar"
+                                aria-valuenow="{{ result.score }}"
+                                aria-valuemin="0" aria-valuemax="100">
+                                {{ result.score }}
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-{{ 'success' if result.score >= 60 else ('warning' if result.score >= 40 else 'danger') }}">
+                        {{ result.severity_label | capitalize }}
+                    </span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

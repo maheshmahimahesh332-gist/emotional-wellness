@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Wellness Assistant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Welcome back! 👋</h2>
+        <p class="text-muted">How are you feeling today? Here's your wellness overview.</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div style="font-size: 2.5rem;">📝</div>
+                <h6 class="card-title mt-2">Log Mood</h6>
+                <a href="{{ url_for('mood.log') }}" class="btn btn-sm btn-primary mt-2">Log Now</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div style="font-size: 2.5rem;">💬</div>
+                <h6 class="card-title mt-2">Chat</h6>
+                <a href="{{ url_for('chat.index') }}" class="btn btn-sm btn-primary mt-2">Start Chat</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div style="font-size: 2.5rem;">🧘</div>
+                <h6 class="card-title mt-2">Mindfulness</h6>
+                <a href="{{ url_for('mindfulness.index') }}" class="btn btn-sm btn-primary mt-2">Practice</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div style="font-size: 2.5rem;">📋</div>
+                <h6 class="card-title mt-2">Assessment</h6>
+                <a href="{{ url_for('assessment.index') }}" class="btn btn-sm btn-primary mt-2">Take One</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Moods -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5><i class="bi bi-emoji-smile"></i> Recent Moods</h5>
+            {% if recent_moods %}
+                <div class="list-group list-group-flush mt-2">
+                    {% for entry in recent_moods[:5] %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>
+                            {% if entry.mood == 'happy' %}😊
+                            {% elif entry.mood == 'calm' %}😌
+                            {% elif entry.mood == 'anxious' %}😰
+                            {% elif entry.mood == 'sad' %}😢
+                            {% elif entry.mood == 'angry' %}😠
+                            {% elif entry.mood == 'stressed' %}😫
+                            {% else %}😐{% endif %}
+                            {{ entry.mood | capitalize }}
+                        </span>
+                        <small class="text-muted">{{ entry.created_at.strftime('%b %d, %I:%M %p') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('mood.index') }}" class="btn btn-link mt-2 p-0">View all →</a>
+            {% else %}
+                <p class="text-muted mt-2">No mood entries yet. Start tracking!</p>
+                <a href="{{ url_for('mood.log') }}" class="btn btn-sm btn-outline-primary">Log Your First Mood</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5><i class="bi bi-lightbulb"></i> Recommendations</h5>
+            <div class="list-group list-group-flush mt-2">
+                {% for rec in recommendations %}
+                <a href="{{ rec.link }}" class="list-group-item list-group-item-action px-0 border-0">
+                    <span style="font-size: 1.3rem;">{{ rec.icon }}</span> {{ rec.text }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Assessment -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5><i class="bi bi-clipboard-check"></i> Latest Assessment</h5>
+            {% if latest_assessment %}
+                <div class="mt-2">
+                    <p class="mb-1"><strong>{{ latest_assessment.category | capitalize }}</strong></p>
+                    <div class="progress mb-2" style="height: 25px;">
+                        <div class="progress-bar
+                            {% if latest_assessment.score >= 60 %}bg-success
+                            {% elif latest_assessment.score >= 40 %}bg-warning
+                            {% else %}bg-danger{% endif %}"
+                            style="width: {{ latest_assessment.score }}%;"
+                            role="progressbar"
+                            aria-valuenow="{{ latest_assessment.score }}"
+                            aria-valuemin="0" aria-valuemax="100">
+                            {{ latest_assessment.score }}/100
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ latest_assessment.severity_label | capitalize }} • {{ latest_assessment.created_at.strftime('%b %d') }}</small>
+                </div>
+            {% else %}
+                <p class="text-muted mt-2">Take an assessment to understand your emotional state.</p>
+                <a href="{{ url_for('assessment.index') }}" class="btn btn-sm btn-outline-primary">Start Assessment</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Exercise Stats -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5><i class="bi bi-flower1"></i> Mindfulness Progress</h5>
+            <div class="mt-2">
+                <p class="display-6 fw-bold text-primary">{{ exercise_count }}</p>
+                <p class="text-muted">Exercises completed</p>
+                <a href="{{ url_for('mindfulness.index') }}" class="btn btn-sm btn-outline-primary">Practice Now</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

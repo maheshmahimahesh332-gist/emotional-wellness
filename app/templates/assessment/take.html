@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.title }} - Wellness Assistant{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h4 class="mb-2">{{ assessment.title }}</h4>
+            <p class="text-muted mb-4">{{ assessment.description }}</p>
+
+            <form method="POST" action="{{ url_for('assessment.submit', category=category) }}">
+                {% for question in assessment.questions %}
+                <div class="mb-4 p-3 bg-light rounded">
+                    <p class="fw-bold mb-2">{{ loop.index }}. {{ question }}</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% set labels = ['Not at all', 'Rarely', 'Sometimes', 'Often', 'Very often'] %}
+                        {% for i in range(5) %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio"
+                                   name="q{{ loop.index0 }}" id="q{{ loop.index0 }}_{{ i }}"
+                                   value="{{ i }}" required>
+                            <label class="form-check-label" for="q{{ loop.index0 }}_{{ i }}">
+                                {{ labels[i] }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary btn-lg w-100">Submit Assessment</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

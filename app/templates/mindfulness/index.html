@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Mindfulness - Wellness Assistant{% endblock %}
+
+{% block content %}
+<h3 class="mb-2"><i class="bi bi-flower1"></i> Mindfulness Exercises</h3>
+<p class="text-muted mb-4">Practice guided techniques to manage stress and improve well-being.</p>
+
+{% if recommendations %}
+<div class="card p-4 mb-4" style="border-left: 4px solid #667eea;">
+    <h5><i class="bi bi-star"></i> Recommended for You</h5>
+    <div class="row g-3 mt-1">
+        {% for ex in recommendations %}
+        <div class="col-md-4">
+            <div class="card h-100 p-3">
+                <span class="badge bg-info mb-2" style="width: fit-content;">{{ ex.difficulty | capitalize }}</span>
+                <h6>{{ ex.title }}</h6>
+                <small class="text-muted">{{ ex.category | replace('_', ' ') | capitalize }} • {{ ex.duration_minutes }} min</small>
+                <a href="{{ url_for('mindfulness.exercise', exercise_id=ex.id) }}" class="btn btn-sm btn-primary mt-2">Start</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% for category_name, exercises in categories.items() %}
+<div class="card p-4 mb-4">
+    <h5>
+        {% if category_name == 'breathing' %}<i class="bi bi-wind"></i> Breathing Techniques
+        {% elif category_name == 'meditation' %}<i class="bi bi-peace"></i> Meditation Sessions
+        {% else %}<i class="bi bi-body-text"></i> Body Scan Relaxation{% endif %}
+    </h5>
+    <div class="row g-3 mt-1">
+        {% for ex in exercises %}
+        <div class="col-md-4">
+            <div class="card h-100 p-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="badge bg-{{ 'success' if ex.difficulty == 'beginner' else ('warning' if ex.difficulty == 'intermediate' else 'danger') }}">
+                        {{ ex.difficulty | capitalize }}
+                    </span>
+                    <small class="text-muted">{{ ex.duration_minutes }} min</small>
+                </div>
+                <h6>{{ ex.title }}</h6>
+                <p class="small text-muted">{{ ex.description[:80] }}...</p>
+                <a href="{{ url_for('mindfulness.exercise', exercise_id=ex.id) }}" class="btn btn-sm btn-outline-primary mt-auto">
+                    Begin Exercise
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% if completions %}
+<div class="card p-4">
+    <h5><i class="bi bi-check2-circle"></i> Recent Completions</h5>
+    <div class="list-group list-group-flush mt-2">
+        {% for comp in completions %}
+        <div class="list-group-item px-0 d-flex justify-content-between">
+            <span>{{ comp.exercise.title }}</span>
+            <small class="text-muted">{{ comp.completed_at.strftime('%b %d, %I:%M %p') }}</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
